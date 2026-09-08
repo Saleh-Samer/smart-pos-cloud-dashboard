@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart POS · Remote Monitor</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="loginScreen" class="login-wrap">
+  <div class="login-card">
+    <div class="brand-dots">
+      <span class="dot dot-blue"></span><span class="dot dot-green"></span><span class="dot dot-orange"></span>
+    </div>
+    <h1>Smart POS</h1>
+    <p class="muted">Remote Monitor — read-only, view only</p>
+    <form id="loginForm" novalidate>
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" autofocus />
+      <p class="error" id="loginError"></p>
+      <button type="submit" id="loginBtn">Sign In</button>
+    </form>
+  </div>
+</div>
+
+<div id="dashboard" class="dashboard hidden">
+  <header class="topbar">
+    <div>
+      <div class="brand-dots small">
+        <span class="dot dot-blue"></span><span class="dot dot-green"></span><span class="dot dot-orange"></span>
+      </div>
+      <span class="brand-name">Smart POS Remote Monitor</span>
+    </div>
+    <button id="logoutBtn" class="btn-outline">Sign out</button>
+  </header>
+
+  <main class="page">
+    <div id="statusBanner" class="status-banner hidden"></div>
+
+    <div class="showing-row">
+      <div>
+        <p class="eyebrow">SHOWING</p>
+        <h1 id="showingDate">—</h1>
+      </div>
+      <p class="muted" id="lastUpdated"></p>
+    </div>
+
+    <div id="emptyState" class="empty-state hidden">
+      <p>No data has been received from the shop yet.</p>
+      <p class="muted">This page will update automatically as soon as the shop's server sends its first snapshot (within a few minutes of it starting up, or right after its first sale).</p>
+    </div>
+
+    <div id="dataArea" class="hidden">
+      <section class="stat-row">
+        <div class="stat-card">
+          <span class="stat-label">Revenue</span>
+          <span class="stat-value" id="statRevenue">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Orders</span>
+          <span class="stat-value" id="statOrders">—</span>
+        </div>
+        <div class="stat-card" id="paymentCard">
+          <span class="stat-label">By Payment Method</span>
+          <div id="paymentBreakdown" class="payment-breakdown"></div>
+        </div>
+      </section>
+
+      <section class="table-section">
+        <h2>🗑️ Deleted Invoices</h2>
+        <table class="data-table">
+          <thead><tr><th>Invoice</th><th>Total</th><th>By</th><th>Reason</th><th>Time</th></tr></thead>
+          <tbody id="deletedInvoicesBody"></tbody>
+        </table>
+      </section>
+
+      <section class="table-section">
+        <h2>🏷️ Discounts Given</h2>
+        <table class="data-table">
+          <thead><tr><th>Invoice</th><th>Discount</th><th>Total</th><th>Cashier</th><th>Table</th></tr></thead>
+          <tbody id="discountedSalesBody"></tbody>
+        </table>
+      </section>
+
+      <section class="table-section">
+        <h2>🪑 Table Changes</h2>
+        <table class="data-table">
+          <thead><tr><th>Action</th><th>Table</th><th>Reason</th><th>Requested By</th><th>Approved By</th><th>Time</th></tr></thead>
+          <tbody id="tableChangesBody"></tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="js/dashboard.js?v=2"></script>
+</body>
+</html>
