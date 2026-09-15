@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#2D3648" />
+<title>Smart POS</title>
+<link rel="icon" type="image/png" href="icon-512.png" />
+<link rel="stylesheet" href="css/style.css?v=3" />
+</head>
+<body data-title="admin_title">
+
+<div id="loginScreen" class="auth-wrap" hidden>
+  <div class="auth-card">
+    <div id="loginLogo"></div>
+    <h1 data-t="admin_title"></h1>
+    <p class="sub" data-t="admin_sub"></p>
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label for="password" data-t="owner_password"></label>
+        <input id="password" type="password" autocomplete="current-password" />
+      </div>
+      <p class="form-error" id="loginError" role="alert"></p>
+      <button type="submit" class="btn btn-primary btn-block" id="loginBtn" data-t="sign_in"></button>
+    </form>
+    <div class="auth-foot"><button class="btn btn-outline btn-sm langBtn" type="button" data-t="lang_toggle"></button></div>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header class="topbar">
+    <span id="topLogo"></span>
+    <span class="topbar-title" data-t="admin_title"></span>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost-light btn-sm langBtn" type="button" data-t="lang_toggle"></button>
+      <button class="btn btn-ghost-light btn-sm" type="button" id="logoutBtn" data-t="sign_out"></button>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="card">
+      <h2><span data-t="add_shop"></span></h2>
+      <form class="add-shop" id="addShopForm" novalidate>
+        <input id="shopNameInput" maxlength="80" data-t-ph="shop_name_ph" />
+        <button class="btn btn-primary" type="submit" id="addShopBtn" data-t="add_shop"></button>
+      </form>
+      <p class="form-error" id="addShopError" role="alert"></p>
+    </section>
+
+    <section class="card">
+      <h2><span data-t="shops"></span><span class="count" id="shopCount"></span></h2>
+      <ul class="list" id="shopList"></ul>
+    </section>
+  </main>
+</div>
+
+<script src="js/common.js?v=3"></script>
+<script src="js/admin.js?v=3"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "Smart POS — Sales Monitor",
+  "short_name": "Smart POS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F3F4F6",
+  "theme_color": "#2D3648",
+  "icons": [{ "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+}

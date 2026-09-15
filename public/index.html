@@ -1,99 +1,86 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Smart POS · Remote Monitor</title>
-<link rel="stylesheet" href="css/style.css" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#2D3648" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Smart POS" />
+<title>Smart POS</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" href="icon-512.png" />
+<link rel="apple-touch-icon" href="icon-512.png" />
+<link rel="stylesheet" href="css/style.css?v=3" />
 </head>
-<body>
+<body data-title="app_title">
 
-<div id="loginScreen" class="login-wrap">
-  <div class="login-card">
-    <div class="brand-dots">
-      <span class="dot dot-blue"></span><span class="dot dot-green"></span><span class="dot dot-orange"></span>
-    </div>
-    <h1>Smart POS</h1>
-    <p class="muted">Remote Monitor — read-only, view only</p>
+<div id="loginScreen" class="auth-wrap" hidden>
+  <div class="auth-card">
+    <div id="loginLogo"></div>
+    <h1 data-t="app_title">متابعة المبيعات</h1>
+    <p class="sub" data-t="manager_sub"></p>
     <form id="loginForm" novalidate>
-      <label for="password">Password</label>
-      <input type="password" id="password" autocomplete="current-password" autofocus />
-      <p class="error" id="loginError"></p>
-      <button type="submit" id="loginBtn">Sign In</button>
+      <div class="field">
+        <label for="shopCode" data-t="shop_code"></label>
+        <input id="shopCode" class="code-input ltr" autocomplete="username" autocapitalize="characters" spellcheck="false" data-t-ph="shop_code_ph" />
+      </div>
+      <div class="field">
+        <label for="password" data-t="password"></label>
+        <input id="password" type="password" autocomplete="current-password" />
+      </div>
+      <p class="form-error" id="loginError" role="alert"></p>
+      <button type="submit" class="btn btn-primary btn-block" id="loginBtn" data-t="sign_in"></button>
     </form>
+    <div class="auth-foot"><button class="btn btn-outline btn-sm langBtn" type="button" data-t="lang_toggle"></button></div>
   </div>
 </div>
 
-<div id="dashboard" class="dashboard hidden">
+<div id="app" hidden>
   <header class="topbar">
-    <div>
-      <div class="brand-dots small">
-        <span class="dot dot-blue"></span><span class="dot dot-green"></span><span class="dot dot-orange"></span>
-      </div>
-      <span class="brand-name">Smart POS Remote Monitor</span>
+    <span id="topLogo"></span>
+    <span class="topbar-title" id="shopName"></span>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost-light btn-sm langBtn" type="button" data-t="lang_toggle"></button>
+      <button class="btn btn-ghost-light btn-sm" type="button" id="logoutBtn" data-t="sign_out"></button>
     </div>
-    <button id="logoutBtn" class="btn-outline">Sign out</button>
   </header>
 
   <main class="page">
-    <div id="statusBanner" class="status-banner hidden"></div>
+    <div class="daybar">
+      <select id="daySelect" aria-label="day"></select>
+      <button class="btn btn-outline btn-sm" type="button" id="refreshBtn" data-t="refresh"></button>
+      <span class="updated" id="updatedText"></span>
+    </div>
 
-    <div class="showing-row">
-      <div>
-        <p class="eyebrow">SHOWING</p>
-        <h1 id="showingDate">—</h1>
+    <div id="notice" class="notice" hidden></div>
+
+    <section id="emptyState" class="card empty-state" hidden>
+      <h2 id="emptyTitle"></h2>
+      <p class="muted" id="emptySub"></p>
+    </section>
+
+    <div id="dataArea" hidden>
+      <section class="stats">
+        <div class="stat"><div class="stat-label" data-t="revenue"></div><span class="stat-value" id="statRevenue"></span></div>
+        <div class="stat"><div class="stat-label" data-t="orders"></div><span class="stat-value" id="statOrders"></span></div>
+        <div class="stat"><div class="stat-label" data-t="profit"></div><span class="stat-value" id="statProfit"></span></div>
+        <div class="stat highlight"><div class="stat-label" data-t="expected_cash"></div><span class="stat-value" id="statCash"></span></div>
+      </section>
+
+      <div class="grid-2">
+        <section class="card"><h2><span data-t="by_payment"></span></h2><div id="paymentList"></div></section>
+        <section class="card"><h2><span data-t="top_products"></span></h2><ul class="list" id="topList"></ul></section>
+        <section class="card"><h2><span data-t="expenses"></span><span class="count ltr" id="expensesTotal"></span></h2><ul class="list" id="expensesList"></ul></section>
+        <section class="card"><h2><span data-t="deleted_invoices"></span><span class="count" id="deletedCount"></span></h2><ul class="list" id="deletedList"></ul></section>
+        <section class="card"><h2><span data-t="discounts"></span><span class="count" id="discountCount"></span></h2><ul class="list" id="discountList"></ul></section>
+        <section class="card"><h2><span data-t="table_changes"></span><span class="count" id="tableCount"></span></h2><ul class="list" id="tableList"></ul></section>
+        <section class="card" id="lowStockCard"><h2><span data-t="low_stock"></span><span class="count" id="lowStockCount"></span></h2><ul class="list" id="lowStockList"></ul></section>
       </div>
-      <p class="muted" id="lastUpdated"></p>
-    </div>
-
-    <div id="emptyState" class="empty-state hidden">
-      <p>No data has been received from the shop yet.</p>
-      <p class="muted">This page will update automatically as soon as the shop's server sends its first snapshot (within a few minutes of it starting up, or right after its first sale).</p>
-    </div>
-
-    <div id="dataArea" class="hidden">
-      <section class="stat-row">
-        <div class="stat-card">
-          <span class="stat-label">Revenue</span>
-          <span class="stat-value" id="statRevenue">—</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Orders</span>
-          <span class="stat-value" id="statOrders">—</span>
-        </div>
-        <div class="stat-card" id="paymentCard">
-          <span class="stat-label">By Payment Method</span>
-          <div id="paymentBreakdown" class="payment-breakdown"></div>
-        </div>
-      </section>
-
-      <section class="table-section">
-        <h2>🗑️ Deleted Invoices</h2>
-        <table class="data-table">
-          <thead><tr><th>Invoice</th><th>Total</th><th>By</th><th>Reason</th><th>Time</th></tr></thead>
-          <tbody id="deletedInvoicesBody"></tbody>
-        </table>
-      </section>
-
-      <section class="table-section">
-        <h2>🏷️ Discounts Given</h2>
-        <table class="data-table">
-          <thead><tr><th>Invoice</th><th>Discount</th><th>Total</th><th>Cashier</th><th>Table</th></tr></thead>
-          <tbody id="discountedSalesBody"></tbody>
-        </table>
-      </section>
-
-      <section class="table-section">
-        <h2>🪑 Table Changes</h2>
-        <table class="data-table">
-          <thead><tr><th>Action</th><th>Table</th><th>Reason</th><th>Requested By</th><th>Approved By</th><th>Time</th></tr></thead>
-          <tbody id="tableChangesBody"></tbody>
-        </table>
-      </section>
     </div>
   </main>
 </div>
 
-<script src="js/dashboard.js?v=2"></script>
+<script src="js/common.js?v=3"></script>
+<script src="js/dashboard.js?v=3"></script>
 </body>
 </html>

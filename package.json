@@ -1,17 +1,24 @@
 {
   "name": "smart-pos-cloud-dashboard",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Read-only, one-way remote monitoring dashboard for Smart POS. Receives a small JSON snapshot pushed from the shop's local server; never talks back to it.",
+  "description": "Smart POS Cloud: one website where every shop running Smart POS pushes its daily numbers and each shop manager sees only their own shop.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "hash-password": "node scripts/hash-password.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "pg-mem": "^3.0.14"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

@@ -1,0 +1,318 @@
+/* Smart POS Cloud — translations and helpers shared by the manager page and the owner page. */
+(function (global) {
+  'use strict';
+
+  const DICT = {
+    ar: {
+      app_title: 'متابعة المبيعات',
+      lang_toggle: 'English',
+      sign_in: 'تسجيل الدخول',
+      signing_in: 'جاري الدخول...',
+      sign_out: 'خروج',
+      shop_code: 'رمز المحل',
+      shop_code_ph: 'مثال: SP-AB12CD',
+      password: 'كلمة السر',
+      manager_sub: 'ادخل برمز محلك وكلمة السر لتشاهد مبيعاتك.',
+      fill_both: 'أدخل رمز المحل وكلمة السر.',
+      network_error: 'تعذّر الاتصال. تأكد من الإنترنت وحاول مرة أخرى.',
+      waking_up: 'جاري تشغيل الموقع... قد يستغرق هذا دقيقة في أول مرة.',
+
+      today: 'اليوم',
+      yesterday: 'أمس',
+      refresh: 'تحديث',
+      updated_from_shop: 'آخر تحديث من المحل: {time}',
+      just_now: 'الآن',
+      shop_offline: 'المحل غير متصل حالياً — الأرقام هي آخر ما وصل {time}.',
+      no_data_title: 'لا توجد بيانات لهذا اليوم بعد',
+      no_data_sub: 'تظهر الأرقام هنا تلقائياً بعد أن يرسلها برنامج المحل (خلال دقائق من أول عملية بيع).',
+      never_connected_title: 'المحل لم يُرسل أي بيانات بعد',
+      never_connected_sub: 'تأكد من إدخال رمز الربط في برنامج المحل: الإعدادات ← المتابعة عن بعد.',
+
+      revenue: 'المبيعات',
+      orders: 'عدد الفواتير',
+      profit: 'الربح',
+      expected_cash: 'الكاش المتوقع بالدرج',
+      currency: 'د.أ',
+      by_payment: 'المبيعات حسب طريقة الدفع',
+      transactions: '{n} عملية',
+      top_products: 'الأكثر مبيعاً',
+      qty: 'الكمية: {n}',
+      expenses: 'المصاريف الخارجية',
+      expenses_total: 'المجموع',
+      recorded_by: 'سجّلها {name}',
+      approved_by: 'وافق {name}',
+      deleted_invoices: 'الفواتير المحذوفة',
+      deleted_by: 'حذفها {name}',
+      discounts: 'الخصومات',
+      discount_of: 'خصم {amount}',
+      cashier: 'الكاشير {name}',
+      table: 'طاولة {name}',
+      table_changes: 'تعديلات الطاولات',
+      table_renamed: 'تغيير اسم: {old} ← {new}',
+      table_deleted: 'حذف طاولة: {old}',
+      requested_by: 'طلبها {name}',
+      low_stock: 'منتجات قاربت على النفاد',
+      stock_left: 'متبقي {n}',
+      out_of_stock: 'نفد',
+      nothing_today: 'لا يوجد.',
+      reason: 'السبب: {text}',
+
+      pay_cash: 'نقدي',
+      pay_visa: 'فيزا',
+      pay_cliq: 'كليك',
+      pay_wallet: 'محفظة',
+      pay_card: 'بطاقة',
+
+      // Owner page
+      admin_title: 'إدارة المحلات',
+      admin_sub: 'صفحة خاصة بصاحب البرنامج.',
+      owner_password: 'كلمة سر المالك',
+      add_shop: 'إضافة محل',
+      shop_name_ph: 'اسم المحل الجديد',
+      adding: 'جاري الإضافة...',
+      shops: 'المحلات',
+      no_shops: 'لا توجد محلات بعد. أضف أول محل من الأعلى.',
+      last_update: 'آخر تحديث: {time}',
+      never: 'لم يُرسل بيانات بعد',
+      disabled: 'موقوف',
+      active: 'يعمل',
+      offline: 'غير متصل',
+      reset_password: 'كلمة سر جديدة',
+      new_connection_code: 'رمز ربط جديد',
+      rename: 'تغيير الاسم',
+      disable: 'إيقاف',
+      enable: 'تشغيل',
+      rename_prompt: 'الاسم الجديد للمحل:',
+      confirm_reset: 'إنشاء كلمة سر جديدة لمدير "{name}"؟ ستتوقف كلمة السر القديمة ويخرج من كل الأجهزة.',
+      confirm_new_code: 'إنشاء رمز ربط جديد لـ "{name}"؟ سيتوقف الرمز القديم فوراً، ويجب إدخال الجديد في برنامج المحل.',
+      confirm_disable: 'إيقاف "{name}"؟ لن يستطيع المدير الدخول ولن تُستقبل مبيعات المحل.',
+      created_title: 'تمت إضافة "{name}"',
+      secrets_once: 'انسخ هذه البيانات الآن — كلمة السر ورمز الربط لا يظهران مرة ثانية.',
+      for_manager: 'للمدير (أرسلها له)',
+      for_pos: 'لبرنامج المحل (الإعدادات ← المتابعة عن بعد)',
+      website: 'الموقع',
+      connection_code: 'رمز الربط',
+      copy: 'نسخ',
+      copied: 'تم النسخ',
+      copy_message: 'نسخ رسالة جاهزة للمدير',
+      manager_message: 'أهلاً، هذه بيانات متابعة مبيعات محلك من أي مكان:\nالموقع: {url}\nرمز المحل: {code}\nكلمة السر: {password}\n\nنصيحة: افتح الموقع من موبايلك واختر "إضافة إلى الشاشة الرئيسية".',
+      new_password_title: 'كلمة سر جديدة لـ "{name}"',
+      new_code_title: 'رمز ربط جديد لـ "{name}"',
+      done: 'تم',
+      session_ended: 'انتهت الجلسة. سجّل الدخول مرة أخرى.'
+    },
+    en: {
+      app_title: 'Sales Monitor',
+      lang_toggle: 'العربية',
+      sign_in: 'Sign In',
+      signing_in: 'Signing in...',
+      sign_out: 'Sign out',
+      shop_code: 'Shop code',
+      shop_code_ph: 'e.g. SP-AB12CD',
+      password: 'Password',
+      manager_sub: 'Sign in with your shop code and password to see your sales.',
+      fill_both: 'Enter the shop code and password.',
+      network_error: "Couldn't connect. Check the internet and try again.",
+      waking_up: 'Starting the website... this can take a minute the first time.',
+
+      today: 'Today',
+      yesterday: 'Yesterday',
+      refresh: 'Refresh',
+      updated_from_shop: 'Last update from the shop: {time}',
+      just_now: 'just now',
+      shop_offline: 'The shop is offline right now — these are the last numbers received {time}.',
+      no_data_title: 'No data for this day yet',
+      no_data_sub: "Numbers appear here automatically once the shop's program sends them (within minutes of the first sale).",
+      never_connected_title: "The shop hasn't sent any data yet",
+      never_connected_sub: "Make sure the connection code was entered in the shop's program: Settings → Remote Monitoring.",
+
+      revenue: 'Sales',
+      orders: 'Invoices',
+      profit: 'Profit',
+      expected_cash: 'Expected cash in drawer',
+      currency: 'JD',
+      by_payment: 'Sales by payment method',
+      transactions: '{n} transaction(s)',
+      top_products: 'Best sellers',
+      qty: 'Qty: {n}',
+      expenses: 'External expenses',
+      expenses_total: 'Total',
+      recorded_by: 'Recorded by {name}',
+      approved_by: 'approved by {name}',
+      deleted_invoices: 'Deleted invoices',
+      deleted_by: 'Deleted by {name}',
+      discounts: 'Discounts',
+      discount_of: '{amount} off',
+      cashier: 'Cashier {name}',
+      table: 'Table {name}',
+      table_changes: 'Table changes',
+      table_renamed: 'Renamed: {old} → {new}',
+      table_deleted: 'Deleted table: {old}',
+      requested_by: 'Requested by {name}',
+      low_stock: 'Running low',
+      stock_left: '{n} left',
+      out_of_stock: 'Out',
+      nothing_today: 'None.',
+      reason: 'Reason: {text}',
+
+      pay_cash: 'Cash',
+      pay_visa: 'Visa',
+      pay_cliq: 'CliQ',
+      pay_wallet: 'Wallet',
+      pay_card: 'Card',
+
+      admin_title: 'Shops',
+      admin_sub: "Owner's page.",
+      owner_password: 'Owner password',
+      add_shop: 'Add shop',
+      shop_name_ph: 'New shop name',
+      adding: 'Adding...',
+      shops: 'Shops',
+      no_shops: 'No shops yet. Add the first one above.',
+      last_update: 'Last update: {time}',
+      never: 'No data sent yet',
+      disabled: 'Disabled',
+      active: 'Active',
+      offline: 'Offline',
+      reset_password: 'New password',
+      new_connection_code: 'New connection code',
+      rename: 'Rename',
+      disable: 'Disable',
+      enable: 'Enable',
+      rename_prompt: 'New shop name:',
+      confirm_reset: 'Create a new password for the manager of "{name}"? The old password stops working and they are signed out everywhere.',
+      confirm_new_code: 'Create a new connection code for "{name}"? The old code stops working at once — the new one must be entered in the shop\'s program.',
+      confirm_disable: 'Disable "{name}"? The manager can\'t sign in and the shop\'s sales won\'t be received.',
+      created_title: '"{name}" added',
+      secrets_once: 'Copy these now — the password and connection code are not shown again.',
+      for_manager: 'For the manager (send to them)',
+      for_pos: "For the shop's program (Settings → Remote Monitoring)",
+      website: 'Website',
+      connection_code: 'Connection code',
+      copy: 'Copy',
+      copied: 'Copied',
+      copy_message: 'Copy a ready message for the manager',
+      manager_message: 'Hi, here are the details to follow your shop\'s sales from anywhere:\nWebsite: {url}\nShop code: {code}\nPassword: {password}\n\nTip: open the website on your phone and choose "Add to Home Screen".',
+      new_password_title: 'New password for "{name}"',
+      new_code_title: 'New connection code for "{name}"',
+      done: 'Done',
+      session_ended: 'Your session ended. Please sign in again.'
+    }
+  };
+
+  // Server error messages are English; show them in Arabic where known.
+  const ERRORS_AR = {
+    'Incorrect shop code or password.': 'رمز المحل أو كلمة السر غير صحيحة.',
+    'Incorrect password.': 'كلمة السر غير صحيحة.',
+    'Too many attempts. Try again in 15 minutes.': 'محاولات كثيرة. حاول مرة أخرى بعد 15 دقيقة.',
+    'This shop has been disabled.': 'هذا المحل موقوف. تواصل مع مزوّد البرنامج.',
+    'Your session has ended. Please sign in again.': 'انتهت الجلسة. سجّل الدخول مرة أخرى.',
+    'Could not reach the database. Try again shortly.': 'تعذّر الوصول لقاعدة البيانات. حاول بعد قليل.',
+    'Enter a shop name (up to 80 characters).': 'أدخل اسم المحل (حتى 80 حرفاً).',
+    'Shop not found.': 'المحل غير موجود.'
+  };
+
+  const LANG_KEY = 'spc_lang';
+  function lang() {
+    try { return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'ar'; } catch (e) { return 'ar'; }
+  }
+  function setLang(value) {
+    try { localStorage.setItem(LANG_KEY, value); } catch (e) { /* private mode: current page only */ }
+    applyLang();
+  }
+  function applyLang() {
+    document.documentElement.lang = lang();
+    document.documentElement.dir = lang() === 'ar' ? 'rtl' : 'ltr';
+    document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = t(el.getAttribute('data-t')); });
+    document.querySelectorAll('[data-t-ph]').forEach((el) => { el.setAttribute('placeholder', t(el.getAttribute('data-t-ph'))); });
+    document.title = t(document.body.getAttribute('data-title') || 'app_title') + ' · Smart POS';
+  }
+
+  function t(key, params) {
+    let text = (DICT[lang()] && DICT[lang()][key]) || DICT.en[key] || key;
+    if (params) Object.keys(params).forEach((p) => { text = text.split(`{${p}}`).join(params[p]); });
+    return text;
+  }
+  function tError(message) {
+    return lang() === 'ar' && ERRORS_AR[message] ? ERRORS_AR[message] : message;
+  }
+
+  function escapeHTML(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function money(n) {
+    const value = Number(n) || 0;
+    return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function relativeTime(iso) {
+    if (!iso) return '';
+    const seconds = Math.round((new Date(iso).getTime() - Date.now()) / 1000);
+    if (Math.abs(seconds) < 60) return t('just_now');
+    const rtf = new Intl.RelativeTimeFormat(lang() === 'ar' ? 'ar' : 'en', { numeric: 'auto' });
+    const units = [['day', 86400], ['hour', 3600], ['minute', 60]];
+    for (const [unit, size] of units) {
+      if (Math.abs(seconds) >= size) return rtf.format(Math.round(seconds / size), unit);
+    }
+    return t('just_now');
+  }
+
+  function clockTime(iso) {
+    if (!iso) return '';
+    // Shop records are stored as UTC "YYYY-MM-DD HH:MM:SS" (SQLite datetime('now')).
+    const normalized = /T|Z$/.test(iso) ? iso : iso.replace(' ', 'T') + 'Z';
+    return new Date(normalized).toLocaleTimeString(lang() === 'ar' ? 'ar-JO' : 'en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  async function api(method, path, body, token) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = 'Bearer ' + token;
+    let res;
+    try {
+      res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    } catch (err) {
+      const e = new Error(t('network_error'));
+      e.network = true;
+      throw e;
+    }
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const e = new Error(tError((data && data.error) || t('network_error')));
+      e.status = res.status;
+      throw e;
+    }
+    return data;
+  }
+
+  function logoHTML() {
+    return '<span class="logo" aria-label="Smart POS"><span class="logo-shapes" aria-hidden="true"><span class="s d"></span><span class="s c"></span><span class="s t"></span></span><span class="logo-name">SMART POS</span></span>';
+  }
+
+  let toastTimer;
+  function toast(text) {
+    let el = document.getElementById('toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'toast';
+      el.className = 'toast';
+      el.setAttribute('role', 'status');
+      document.body.appendChild(el);
+    }
+    el.textContent = text;
+    el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.hidden = true; }, 2600);
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast(t('copied'));
+    } catch (err) {
+      window.prompt(t('copy'), text);
+    }
+  }
+
+  global.SPC = { t, tError, lang, setLang, applyLang, escapeHTML, money, relativeTime, clockTime, api, logoHTML, toast, copyText };
+})(window);
