@@ -26,15 +26,34 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const db = require('./db');
 
+// Values pasted into a hosting dashboard often carry extras copied along with
+// them: surrounding quotes, a "KEY=" prefix, a "psql" command, stray spaces or
+// line breaks. Strip those rather than fail on an otherwise correct value.
+function cleanEnv(name) {
+  let value = String(process.env[name] || '').trim();
+  value = value.replace(new RegExp(`^${name}\\s*=\\s*`), '').replace(/^psql\s+/, '').trim();
+  value = value.replace(/^(['"])([\s\S]*)\1$/, '$2').trim();
+  return value;
+}
+
+process.env.DATABASE_URL = cleanEnv('DATABASE_URL');
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || '';
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
+const JWT_SECRET = cleanEnv('JWT_SECRET');
+const ADMIN_PASSWORD_HASH = cleanEnv('ADMIN_PASSWORD_HASH');
 const FLUSH_INTERVAL_MS = Number(process.env.FLUSH_INTERVAL_MS) || 10 * 60 * 1000;
 const KEEP_DAYS = 90;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-if (!process.env.DATABASE_URL || JWT_SECRET.length < 32 || !ADMIN_PASSWORD_HASH) {
-  console.error('[startup] DATABASE_URL, JWT_SECRET (32+ chars) and ADMIN_PASSWORD_HASH must all be set.');
+// Say exactly which setting is wrong (never the value itself) so a bad paste is easy to spot in the logs.
+const configProblems = [];
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl) configProblems.push('DATABASE_URL is empty.');
+else if (dbUrl !== 'pg-mem' && !/^postgres(ql)?:\/\/[^\s]+$/.test(dbUrl)) configProblems.push('DATABASE_URL must start with postgresql:// and be one line.');
+else if (/\*{3,}/.test(dbUrl)) configProblems.push('DATABASE_URL still has **** in place of the password — copy it again after "Show password".');
+if (JWT_SECRET.length < 32) configProblems.push(`JWT_SECRET must be at least 32 characters (it has ${JWT_SECRET.length}).`);
+if (!/^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(ADMIN_PASSWORD_HASH)) configProblems.push('ADMIN_PASSWORD_HASH must be the single line starting with $2a$10$ from the password tool.');
+if (configProblems.length) {
+  configProblems.forEach((p) => console.error('[startup] ' + p));
   process.exit(1);
 }
 
