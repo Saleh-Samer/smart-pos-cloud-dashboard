@@ -71,13 +71,20 @@
     return false;
   }
 
-  function todayISO() { return new Date().toISOString().slice(0, 10); }
-  function yesterdayISO() { return new Date(Date.now() - 86400000).toISOString().slice(0, 10); }
+  // The shop reports its own local business day; label with the viewer's local calendar (not UTC),
+  // or "Today" would point at yesterday for the first hours after midnight.
+  function localISO(offsetDays) {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  function todayISO() { return localISO(0); }
+  function yesterdayISO() { return localISO(-1); }
 
   function dayLabel(date) {
     if (date === todayISO()) return t('today');
     if (date === yesterdayISO()) return t('yesterday');
-    return new Date(date + 'T12:00:00Z').toLocaleDateString(window.SPC.lang() === 'ar' ? 'ar-JO' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    return new Date(date + 'T12:00:00').toLocaleDateString(window.SPC.lang() === 'ar' ? 'ar-JO' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   }
 
   function renderDayOptions() {
