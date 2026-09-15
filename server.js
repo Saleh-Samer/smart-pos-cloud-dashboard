@@ -21,6 +21,7 @@
 require('dotenv').config();
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -42,6 +43,8 @@ const JWT_SECRET = cleanEnv('JWT_SECRET');
 const ADMIN_PASSWORD_HASH = cleanEnv('ADMIN_PASSWORD_HASH');
 const FLUSH_INTERVAL_MS = Number(process.env.FLUSH_INTERVAL_MS) || 10 * 60 * 1000;
 const KEEP_DAYS = 90;
+const MAX_BACKUP_UPLOAD = '40mb';               // gzip; a busy shop's year of sales is a few MB
+const MAX_BACKUP_UNCOMPRESSED = 250 * 1024 * 1024; // refuse zip bombs
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // Say exactly which setting is wrong (never the value itself) so a bad paste is easy to spot in the logs.
@@ -106,6 +109,7 @@ function cacheShop(shop) {
 
 const pendingSnapshots = new Map(); // `${shopId}|${date}` -> { shopId, date, payload, receivedAt }
 const lastPushTimes = new Map();     // shopId -> ISO time (flushed with the snapshots)
+const backupInfo = new Map();        // shopId -> { createdAt, receivedAt, size, businessDate } (no file bytes)
 let flushing = null;
 
 function shopView(shop) {
@@ -115,7 +119,8 @@ function shopView(shop) {
     name: shop.name,
     disabled: shop.disabled,
     lastPushAt: lastPushTimes.get(shop.id) || (shop.last_push_at ? new Date(shop.last_push_at).toISOString() : null),
-    createdAt: new Date(shop.created_at).toISOString()
+    createdAt: new Date(shop.created_at).toISOString(),
+    backup: backupInfo.get(shop.id) || null
   };
 }
 
@@ -207,6 +212,46 @@ function authenticatePush(req, res) {
 app.post('/api/push/verify', (req, res) => {
   const shop = authenticatePush(req, res);
   if (shop) res.json({ ok: true, shopName: shop.name, shopCode: shop.code });
+});
+
+// Full database backup, sent when the shop presses "Back Up" after the day's
+// count. Authenticated BEFORE the body is read, so nobody without a valid
+// connection code can make the server swallow a large upload.
+app.post('/api/push/backup', (req, res, next) => {
+  const shop = authenticatePush(req, res);
+  if (!shop) return;
+  req.shop = shop;
+  next();
+}, express.raw({ type: 'application/octet-stream', limit: MAX_BACKUP_UPLOAD }), async (req, res) => {
+  const body = req.body;
+  if (!Buffer.isBuffer(body) || !body.length) return res.status(400).json({ error: 'Empty backup.' });
+  const digest = crypto.createHash('sha256').update(body).digest('hex');
+  if (digest !== String(req.get('X-Backup-Sha256') || '').toLowerCase()) {
+    return res.status(400).json({ error: 'The backup was damaged in transit. Try again.' });
+  }
+
+  let originalSize;
+  try {
+    const raw = zlib.gunzipSync(body, { maxOutputLength: MAX_BACKUP_UNCOMPRESSED });
+    if (raw.subarray(0, 15).toString('latin1') !== 'SQLite format 3') throw new Error('not a database');
+    originalSize = raw.length;
+  } catch (err) {
+    return res.status(400).json({ error: 'That upload is not a Smart POS backup.' });
+  }
+
+  const createdHeader = Date.parse(req.get('X-Backup-Created-At') || '');
+  const createdAt = new Date(Number.isNaN(createdHeader) ? Date.now() : createdHeader).toISOString();
+  const businessDate = DATE_RE.test(req.get('X-Backup-Business-Date') || '') ? req.get('X-Backup-Business-Date') : null;
+  const receivedAt = new Date().toISOString();
+
+  try {
+    await db.saveBackup({ shopId: req.shop.id, data: body, compressedSize: body.length, originalSize, sha256: digest, businessDate, createdAt, receivedAt });
+  } catch (err) {
+    console.error('[backup] save failed:', err.message);
+    return res.status(503).json({ error: 'Could not reach the database. Try again shortly.' });
+  }
+  backupInfo.set(req.shop.id, { createdAt, receivedAt, size: originalSize, compressedSize: body.length, businessDate });
+  res.json({ ok: true, receivedAt });
 });
 
 app.post('/api/push', (req, res) => {
@@ -371,6 +416,28 @@ app.post('/api/admin/shops/:id/new-connection-code', requireRole('admin'), async
   await applyShopUpdate(res, shop.id, { pushKeyHash: sha256(pushKey) }, { connectionCode: connectionCode(req, shop.code, pushKey) });
 });
 
+// Owner downloads a shop's latest backup (as a plain .sqlite file) to restore it on a new computer.
+app.get('/api/admin/shops/:id/backup', requireRole('admin'), async (req, res) => {
+  const shop = shopsById.get(Number(req.params.id));
+  if (!shop) return res.status(404).json({ error: 'Shop not found.' });
+  try {
+    const backup = await db.getBackup(shop.id);
+    if (!backup) return res.status(404).json({ error: 'This shop has not uploaded a backup yet.' });
+    const raw = zlib.gunzipSync(backup.data, { maxOutputLength: MAX_BACKUP_UNCOMPRESSED });
+    const day = backup.business_date || new Date(backup.created_at).toISOString().slice(0, 10);
+    res.set({
+      'Content-Type': 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="smartpos-${shop.code}-${day}.sqlite"`,
+      'Content-Length': String(raw.length),
+      'Cache-Control': 'no-store'
+    });
+    res.send(raw);
+  } catch (err) {
+    console.error('[backup] download failed:', err.message);
+    res.status(503).json({ error: 'Could not reach the database. Try again shortly.' });
+  }
+});
+
 app.post('/api/admin/shops/:id/rename', requireRole('admin'), async (req, res) => {
   const name = validName(req.body);
   if (!name) return res.status(400).json({ error: 'Enter a shop name (up to 80 characters).' });
@@ -390,6 +457,13 @@ async function main() {
   db.connect();
   await db.migrate();
   (await db.allShops()).forEach(cacheShop);
+  (await db.backupSummaries()).forEach((b) => backupInfo.set(b.shop_id, {
+    createdAt: new Date(b.created_at).toISOString(),
+    receivedAt: new Date(b.received_at).toISOString(),
+    size: b.original_size,
+    compressedSize: b.compressed_size,
+    businessDate: b.business_date
+  }));
   await db.pruneSnapshots(KEEP_DAYS).catch((err) => console.error('[prune]', err.message));
 
   setInterval(flush, FLUSH_INTERVAL_MS).unref();

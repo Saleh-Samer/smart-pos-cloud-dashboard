@@ -3,6 +3,8 @@
    Two tables:
    - shops:     one row per shop you've sold Smart POS to (its login + push key)
    - snapshots: one row per shop per day — that day's numbers as last pushed
+   - backups:   the latest full database backup per shop (gzip), for restoring
+                a shop whose computer died or was stolen
 
    DATABASE_URL=pg-mem runs an in-memory Postgres instead, for local testing
    only (nothing is saved when the process stops).
@@ -55,6 +57,18 @@ async function migrate() {
       payload       JSONB NOT NULL,
       received_at   TIMESTAMPTZ NOT NULL,
       PRIMARY KEY (shop_id, business_date)
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS backups (
+      shop_id        INTEGER PRIMARY KEY REFERENCES shops(id) ON DELETE CASCADE,
+      data           TEXT NOT NULL,           -- base64 of the gzip of the shop's SQLite file (text works identically on every Postgres, incl. the in-memory test one)
+      compressed_size INTEGER NOT NULL,
+      original_size  INTEGER NOT NULL,
+      sha256         TEXT NOT NULL,           -- of the gzip bytes
+      business_date  TEXT,
+      created_at     TIMESTAMPTZ NOT NULL,    -- when the shop made it
+      received_at    TIMESTAMPTZ NOT NULL
     )
   `);
 }
@@ -130,4 +144,28 @@ async function pruneSnapshots(keepDays) {
   await pool.query('DELETE FROM snapshots WHERE business_date < $1', [cutoff]);
 }
 
-module.exports = { connect, migrate, allShops, insertShop, updateShop, saveSnapshots, saveLastPushTimes, getSnapshot, listDates, pruneSnapshots };
+/** Keeps only the newest backup per shop — the free database is small. */
+async function saveBackup(b) {
+  await pool.query(
+    `INSERT INTO backups (shop_id, data, compressed_size, original_size, sha256, business_date, created_at, received_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     ON CONFLICT (shop_id) DO UPDATE SET data = EXCLUDED.data, compressed_size = EXCLUDED.compressed_size,
+       original_size = EXCLUDED.original_size, sha256 = EXCLUDED.sha256, business_date = EXCLUDED.business_date,
+       created_at = EXCLUDED.created_at, received_at = EXCLUDED.received_at`,
+    [b.shopId, b.data.toString('base64'), b.compressedSize, b.originalSize, b.sha256, b.businessDate, b.createdAt, b.receivedAt]
+  );
+}
+
+async function getBackup(shopId) {
+  const { rows } = await pool.query('SELECT * FROM backups WHERE shop_id = $1', [shopId]);
+  if (!rows[0]) return null;
+  return { ...rows[0], data: Buffer.from(rows[0].data, 'base64') };
+}
+
+/** Everything about each shop's backup except the (large) file itself. */
+async function backupSummaries() {
+  const { rows } = await pool.query('SELECT shop_id, compressed_size, original_size, business_date, created_at, received_at FROM backups');
+  return rows;
+}
+
+module.exports = { saveBackup, getBackup, backupSummaries, connect, migrate, allShops, insertShop, updateShop, saveSnapshots, saveLastPushTimes, getSnapshot, listDates, pruneSnapshots };

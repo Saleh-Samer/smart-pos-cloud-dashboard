@@ -99,6 +99,11 @@
       new_password_title: 'كلمة سر جديدة لـ "{name}"',
       new_code_title: 'رمز ربط جديد لـ "{name}"',
       done: 'تم',
+      last_backup: 'آخر نسخة احتياطية: {time} ({size} ميغابايت)',
+      no_backup: 'لا توجد نسخة احتياطية على السحابة بعد',
+      download_backup: 'تنزيل آخر نسخة',
+      restore_title: 'تم تنزيل النسخة',
+      restore_steps: 'لاسترجاعها على جهاز جديد:\n1. ركّب Smart POS على الجهاز الجديد وافتحه مرة ثم أغلقه.\n2. افتح المجلد %APPDATA%\\smart-pos-desktop\\data\n3. احذف data.sqlite و data.sqlite-wal و data.sqlite-shm\n4. انسخ الملف الذي نزل وسمّه data.sqlite\n5. افتح Smart POS — ستحتاج رمز تفعيل جديد لأن الجهاز تغيّر.',
       session_ended: 'انتهت الجلسة. سجّل الدخول مرة أخرى.'
     },
     en: {
@@ -196,6 +201,11 @@
       new_password_title: 'New password for "{name}"',
       new_code_title: 'New connection code for "{name}"',
       done: 'Done',
+      last_backup: 'Last backup: {time} ({size} MB)',
+      no_backup: 'No cloud backup yet',
+      download_backup: 'Download latest backup',
+      restore_title: 'Backup downloaded',
+      restore_steps: 'To restore it on a new computer:\n1. Install Smart POS on the new computer, open it once, then close it.\n2. Open the folder %APPDATA%\\smart-pos-desktop\\data\n3. Delete data.sqlite, data.sqlite-wal and data.sqlite-shm\n4. Copy the downloaded file there and name it data.sqlite\n5. Open Smart POS — it will need a new activation code because the computer changed.',
       session_ended: 'Your session ended. Please sign in again.'
     }
   };
@@ -209,7 +219,8 @@
     'Your session has ended. Please sign in again.': 'انتهت الجلسة. سجّل الدخول مرة أخرى.',
     'Could not reach the database. Try again shortly.': 'تعذّر الوصول لقاعدة البيانات. حاول بعد قليل.',
     'Enter a shop name (up to 80 characters).': 'أدخل اسم المحل (حتى 80 حرفاً).',
-    'Shop not found.': 'المحل غير موجود.'
+    'Shop not found.': 'المحل غير موجود.',
+    'This shop has not uploaded a backup yet.': 'هذا المحل لم يرفع نسخة احتياطية بعد.'
   };
 
   const LANG_KEY = 'spc_lang';

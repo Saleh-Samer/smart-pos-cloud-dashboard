@@ -88,10 +88,12 @@
         <div class="main">
           <div class="title">${escapeHTML(s.name)} ${statusPill(s)}</div>
           <div class="sub"><span class="ltr">${escapeHTML(s.code)}</span> · ${escapeHTML(s.lastPushAt ? t('last_update', { time: relativeTime(s.lastPushAt) }) : t('never'))}</div>
+          <div class="sub">${escapeHTML(s.backup ? t('last_backup', { time: relativeTime(s.backup.receivedAt), size: (s.backup.size / 1048576).toFixed(1) }) : t('no_backup'))}</div>
           <div class="shop-actions">
             <button class="btn btn-outline btn-sm" data-act="reset" data-id="${s.id}">${escapeHTML(t('reset_password'))}</button>
             <button class="btn btn-outline btn-sm" data-act="code" data-id="${s.id}">${escapeHTML(t('new_connection_code'))}</button>
             <button class="btn btn-outline btn-sm" data-act="rename" data-id="${s.id}">${escapeHTML(t('rename'))}</button>
+            ${s.backup ? `<button class="btn btn-outline btn-sm" data-act="download" data-id="${s.id}">${escapeHTML(t('download_backup'))}</button>` : ''}
             <button class="btn btn-outline btn-sm ${s.disabled ? '' : 'btn-danger-text'}" data-act="toggle" data-id="${s.id}">${escapeHTML(s.disabled ? t('enable') : t('disable'))}</button>
           </div>
         </div>
@@ -185,6 +187,9 @@
         const name = window.prompt(t('rename_prompt'), shop.name);
         if (!name || !name.trim() || name.trim() === shop.name) return;
         await api('POST', `/api/admin/shops/${shop.id}/rename`, { name: name.trim() }, token);
+      } else if (act === 'download') {
+        await downloadBackup(shop);
+        return;
       } else if (act === 'toggle') {
         if (!shop.disabled && !window.confirm(t('confirm_disable', { name: shop.name }))) return;
         await api('POST', `/api/admin/shops/${shop.id}/disabled`, { disabled: !shop.disabled }, token);
@@ -194,6 +199,27 @@
       if (!handleAuthError(err)) window.SPC.toast(err.message);
     }
   });
+
+  async function downloadBackup(shop) {
+    const res = await fetch(`/api/admin/shops/${shop.id}/backup`, { headers: { Authorization: 'Bearer ' + token } });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const err = new Error(window.SPC.tError(data.error || t('network_error')));
+      err.status = res.status;
+      throw err;
+    }
+    const blob = await res.blob();
+    const name = (/filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') || '') || [])[1] || `smartpos-${shop.code}.sqlite`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showModal(`<h2>${escapeHTML(t('restore_title'))}</h2><p>${escapeHTML(t('restore_steps')).replace(/\n/g, '<br>')}</p>`);
+  }
 
   document.querySelectorAll('.langBtn').forEach((btn) => btn.addEventListener('click', () => {
     window.SPC.setLang(window.SPC.lang() === 'ar' ? 'en' : 'ar');
