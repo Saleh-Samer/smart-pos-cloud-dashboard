@@ -12,6 +12,11 @@
   let shop = null;
   let selectedDate = null;
   let lastSnapshot = null;
+  // Picked by hand from the list; otherwise the page follows the shop's day.
+  let userPicked = false;
+  // What each loaded day told us: { running, finished, orders }. Shops on an
+  // older app don't send it, and the page falls back to the phone's calendar.
+  const dayInfo = {};
   let refreshTimer = null;
 
   try { token = localStorage.getItem(TOKEN_KEY); } catch (e) { token = null; }
@@ -81,21 +86,70 @@
   function todayISO() { return localISO(0); }
   function yesterdayISO() { return localISO(-1); }
 
+  const dateText = (date) => new Date(date + 'T12:00:00').toLocaleDateString(window.SPC.lang() === 'ar' ? 'ar-JO' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+  /** Does the shop tell us its own day (app 1.1.8+)? */
+  const shopKnowsItsDay = () => Object.values(dayInfo).some((info) => typeof info.running === 'boolean');
+
   function dayLabel(date) {
-    if (date === todayISO()) return t('today');
-    if (date === yesterdayISO()) return t('yesterday');
-    return new Date(date + 'T12:00:00').toLocaleDateString(window.SPC.lang() === 'ar' ? 'ar-JO' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    const info = dayInfo[date];
+    if (!shopKnowsItsDay()) {
+      if (date === todayISO()) return t('today');
+      if (date === yesterdayISO()) return t('yesterday');
+      return dateText(date);
+    }
+    // The shop's day can end at 9pm or 1am, so name days by date, not by the phone's "today".
+    if (info && info.running) return `${dateText(date)} · ${t('day_running')}`;
+    if (info && info.finished) return `${dateText(date)} · ${t('day_finished_mark')}`;
+    return dateText(date);
+  }
+
+  function rememberDay(date, snap) {
+    if (!snap || snap.empty || !snap.data) return;
+    const d = snap.data;
+    dayInfo[date] = { running: d.running, finished: d.finished || null, orders: (d.summary && d.summary.orders) || 0 };
+  }
+
+  async function fetchDay(date) {
+    const snap = await api('GET', `/api/shop/snapshot?date=${date}`, null, token);
+    rememberDay(date, snap);
+    return snap;
+  }
+
+  function dayDates() {
+    const stored = shop.dates || [];
+    return (shopKnowsItsDay() ? [...stored] : [...new Set([todayISO(), ...stored])]).sort().reverse();
   }
 
   function renderDayOptions() {
-    const dates = [...new Set([todayISO(), ...(shop.dates || [])])].sort().reverse();
+    const dates = dayDates();
     if (!selectedDate || !dates.includes(selectedDate)) selectedDate = dates[0];
     $('daySelect').innerHTML = dates.map((d) => `<option value="${d}" ${d === selectedDate ? 'selected' : ''}>${escapeHTML(dayLabel(d))}</option>`).join('');
+  }
+
+  /**
+   * Which day to open on: the shop's current day — unless it was just
+   * finished and nothing has been sold since, then the finished day, so the
+   * manager lands on the final numbers.
+   */
+  async function pickDefaultDay() {
+    const dates = [...(shop.dates || [])].sort().reverse();
+    if (!dates.length) return;
+    const newest = await fetchDay(dates[0]);
+    let pick = dates[0];
+    const info = dayInfo[dates[0]];
+    if (info && info.running && info.orders === 0 && dates[1]) {
+      const previous = await fetchDay(dates[1]);
+      if (dayInfo[dates[1]] && dayInfo[dates[1]].finished) { pick = dates[1]; lastSnapshot = previous; }
+    }
+    if (pick === dates[0]) lastSnapshot = newest;
+    selectedDate = pick;
   }
 
   async function loadShop() {
     shop = await api('GET', '/api/shop', null, token);
     $('shopName').textContent = shop.name;
+    if (!userPicked) await pickDefaultDay();
     renderDayOptions();
   }
 
@@ -103,7 +157,8 @@
     const btn = $('refreshBtn');
     btn.disabled = true;
     try {
-      lastSnapshot = await api('GET', `/api/shop/snapshot?date=${selectedDate}`, null, token);
+      lastSnapshot = await fetchDay(selectedDate);
+      renderDayOptions();
       render();
     } catch (err) {
       if (!handleAuthError(err)) showNotice('danger', err.message);
@@ -115,7 +170,8 @@
   async function refreshAll() {
     try {
       await loadShop();
-      await loadDay();
+      if (userPicked || !lastSnapshot || lastSnapshot.date !== selectedDate) await loadDay();
+      else render();
     } catch (err) {
       if (!handleAuthError(err)) showNotice('danger', err.message);
     }
@@ -149,7 +205,8 @@
 
   function render() {
     const snap = lastSnapshot;
-    const isToday = selectedDate === todayISO();
+    const info = dayInfo[selectedDate];
+    const isToday = shopKnowsItsDay() ? !!(info && info.running) : selectedDate === todayISO();
     const lastPush = shop.lastPushAt;
 
     if (!lastPush) {
@@ -178,10 +235,44 @@
 
     const d = snap.data;
     const summary = d.summary || {};
+
+    const status = $('dayStatus');
+    if (d.finished) {
+      status.className = 'notice notice-success';
+      status.textContent = t('day_finished_banner', { time: clockTime(d.finished.at), name: d.finished.by || '—' });
+      status.hidden = false;
+    } else if (d.running === true) {
+      status.className = 'notice notice-info';
+      status.textContent = t('day_running_banner');
+      status.hidden = false;
+    } else {
+      status.hidden = true;
+    }
+
     $('statRevenue').innerHTML = amount(summary.revenue);
     $('statOrders').textContent = String(summary.orders || 0);
     $('statProfit').innerHTML = amount(summary.profit);
     $('statCash').innerHTML = amount(d.expectedCashInDrawer);
+    const cashTotal = ((d.paymentBreakdown || []).find((p) => p.method === 'Cash') || {}).total || 0;
+    $('statCashSub').textContent = d.openingFloat !== undefined
+      ? t('cash_breakdown', { float: money(d.openingFloat), cash: money(cashTotal), expenses: money(d.externalExpensesTotal || 0) })
+      : '';
+
+    const shifts = Array.isArray(d.shifts) ? d.shifts : [];
+    $('shiftsCard').hidden = !(d.shiftsEnabled || shifts.length);
+    $('shiftsCount').textContent = shifts.length ? String(shifts.length) : '';
+    $('shiftsList').innerHTML = listOrEmpty(shifts, (s) => {
+      const pill = s.difference === null || s.difference === undefined
+        ? `<span class="pill pill-muted">${escapeHTML(t('shift_open'))}</span>`
+        : s.difference === 0
+          ? `<span class="pill pill-success">${escapeHTML(t('shift_exact'))}</span>`
+          : `<span class="pill ${s.difference < 0 ? 'pill-danger' : 'pill-warning'}">${escapeHTML(t(s.difference < 0 ? 'shift_short' : 'shift_over', { amount: money(Math.abs(s.difference)) }))}</span>`;
+      const dash = (n) => (n === null || n === undefined ? '—' : money(n));
+      return `
+      <li><div class="main"><div class="title"><span class="ltr">${escapeHTML(clockTime(s.openedAt))} – ${s.closedAt ? escapeHTML(clockTime(s.closedAt)) : '…'}</span> · ${escapeHTML(s.closedBy || s.openedBy || '—')}</div>
+      <div class="sub">${escapeHTML(t('shift_line', { sales: dash(s.salesTotal), expected: dash(s.expectedCash), counted: dash(s.countedCash) }))}</div></div>
+      <div class="end">${pill}</div></li>`;
+    });
 
     const payments = d.paymentBreakdown || [];
     const maxPay = Math.max(1, ...payments.map((p) => p.total));
@@ -244,7 +335,7 @@
   }));
   $('logoutBtn').addEventListener('click', signOut);
   $('refreshBtn').addEventListener('click', refreshAll);
-  $('daySelect').addEventListener('change', (e) => { selectedDate = e.target.value; loadDay(); });
+  $('daySelect').addEventListener('change', (e) => { selectedDate = e.target.value; userPicked = true; loadDay(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && token && shop) refreshAll(); });
 
   $('loginLogo').innerHTML = window.SPC.logoHTML();

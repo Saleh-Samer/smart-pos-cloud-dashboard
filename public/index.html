@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" type="image/png" href="icon-512.png" />
 <link rel="apple-touch-icon" href="icon-512.png" />
-<link rel="stylesheet" href="css/style.css?v=3" />
+<link rel="stylesheet" href="css/style.css?v=4" />
 </head>
 <body data-title="app_title">
 
@@ -60,14 +60,16 @@
     </section>
 
     <div id="dataArea" hidden>
+      <div id="dayStatus" class="notice" hidden></div>
       <section class="stats">
         <div class="stat"><div class="stat-label" data-t="revenue"></div><span class="stat-value" id="statRevenue"></span></div>
         <div class="stat"><div class="stat-label" data-t="orders"></div><span class="stat-value" id="statOrders"></span></div>
         <div class="stat"><div class="stat-label" data-t="profit"></div><span class="stat-value" id="statProfit"></span></div>
-        <div class="stat highlight"><div class="stat-label" data-t="expected_cash"></div><span class="stat-value" id="statCash"></span></div>
+        <div class="stat highlight"><div class="stat-label" data-t="expected_cash"></div><span class="stat-value" id="statCash"></span><div class="stat-sub" id="statCashSub"></div></div>
       </section>
 
       <div class="grid-2">
+        <section class="card" id="shiftsCard" hidden><h2><span data-t="shifts"></span><span class="count" id="shiftsCount"></span></h2><ul class="list" id="shiftsList"></ul></section>
         <section class="card"><h2><span data-t="by_payment"></span></h2><div id="paymentList"></div></section>
         <section class="card"><h2><span data-t="top_products"></span></h2><ul class="list" id="topList"></ul></section>
         <section class="card"><h2><span data-t="expenses"></span><span class="count ltr" id="expensesTotal"></span></h2><ul class="list" id="expensesList"></ul></section>
@@ -80,7 +82,7 @@
   </main>
 </div>
 
-<script src="js/common.js?v=4"></script>
-<script src="js/dashboard.js?v=4"></script>
+<script src="js/common.js?v=5"></script>
+<script src="js/dashboard.js?v=5"></script>
 </body>
 </html>
