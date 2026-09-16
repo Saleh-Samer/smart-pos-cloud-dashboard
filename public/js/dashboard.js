@@ -303,7 +303,7 @@
       <div class="calc">${calc}</div>
       ${shiftNotes.length ? `<ul class="shift-notes">${shiftNotes.map((n) => `<li>📝 ${escapeHTML(n.text)} <span class="meta">— ${escapeHTML(n.author || '')}, <span class="ltr">${escapeHTML(clockTime(n.createdAt))}</span></span></li>`).join('')}</ul>` : ''}
       </div>
-      <div class="end">${pills}</div></li>`;
+      <div class="end pills">${pills}</div></li>`;
     });
 
     $('reviewsCard').hidden = !adjustments.length;
@@ -317,7 +317,7 @@
       <li><div class="main"><div class="title">${escapeHTML(t(x.action === 'corrected' ? 'adj_corrected' : 'adj_confirmed'))}${shift ? ' · ' + shiftTimes(shift) : ''}${x.afterDayFinished ? ` <span class="pill pill-danger">${escapeHTML(t('adj_after_finish'))}</span>` : ''}</div>
       <div class="sub">${changes.length ? escapeHTML(changes.join(' · ')) + ' · ' : ''}${escapeHTML(t('reason', { text: x.reason }))}</div>
       <div class="sub">${escapeHTML(t('adj_by', { cashier: x.cashier || '—', by: x.reviewedBy || '—' }))} · <span class="ltr">${escapeHTML(clockTime(x.createdAt))}</span></div></div>
-      <div class="end">${diffPill(x.oldDifference)} ← ${diffPill(x.newDifference)}</div></li>`;
+      <div class="end pills">${diffPill(x.oldDifference)} ← ${diffPill(x.newDifference)}</div></li>`;
     });
 
     // Notes not tied to a shift (a shop that doesn't count per shift).
