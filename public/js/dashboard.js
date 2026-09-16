@@ -248,31 +248,85 @@
     } else {
       status.hidden = true;
     }
+    const waiting = d.shiftsSummary && d.shiftsSummary.pendingReview;
+    if (waiting) status.textContent += ' ' + t('pending_banner', { n: waiting });
 
     $('statRevenue').innerHTML = amount(summary.revenue);
     $('statOrders').textContent = String(summary.orders || 0);
     $('statProfit').innerHTML = amount(summary.profit);
-    $('statCash').innerHTML = amount(d.expectedCashInDrawer);
     const cashTotal = ((d.paymentBreakdown || []).find((p) => p.method === 'Cash') || {}).total || 0;
-    $('statCashSub').textContent = d.openingFloat !== undefined
-      ? t('cash_breakdown', { float: money(d.openingFloat), cash: money(cashTotal), expenses: money(d.externalExpensesTotal || 0) })
-      : '';
+    const sum = d.shiftsSummary;
+    // Counting per shift: the float is the same money all day, and the day is judged by the shifts.
+    $('statCashLabel').textContent = t(sum ? 'drawer_now' : 'expected_cash');
+    $('statCash').innerHTML = amount(sum ? sum.drawerNow : d.expectedCashInDrawer);
+    $('statCashSub').textContent = sum
+      ? ''
+      : d.openingFloat !== undefined
+        ? t('cash_breakdown', { float: money(d.openingFloat), cash: money(cashTotal), expenses: money(d.externalExpensesTotal || 0) })
+        : '';
 
     const shifts = Array.isArray(d.shifts) ? d.shifts : [];
+    const notes = Array.isArray(d.notes) ? d.notes : [];
+    const adjustments = Array.isArray(d.shiftAdjustments) ? d.shiftAdjustments : [];
+    const dash = (n) => (n === null || n === undefined ? '—' : money(n));
+    const diffPill = (diff) => (diff === null || diff === undefined
+      ? `<span class="pill pill-muted">${escapeHTML(t('shift_open'))}</span>`
+      : diff === 0
+        ? `<span class="pill pill-success">${escapeHTML(t('shift_exact'))}</span>`
+        : `<span class="pill ${diff < 0 ? 'pill-danger' : 'pill-warning'}">${escapeHTML(t(diff < 0 ? 'shift_short' : 'shift_over', { amount: money(Math.abs(diff)) }))}</span>`);
+    const shiftTimes = (s) => `<span class="ltr">${escapeHTML(clockTime(s.openedAt))} – ${s.closedAt ? escapeHTML(clockTime(s.closedAt)) : '…'}</span>`;
+
     $('shiftsCard').hidden = !(d.shiftsEnabled || shifts.length);
     $('shiftsCount').textContent = shifts.length ? String(shifts.length) : '';
+    const sumRow = (label, value, cls) => `<div class="sum-row${cls ? ' ' + cls : ''}"><span>${escapeHTML(label)}</span><span class="ltr">${value}</span></div>`;
+    $('shiftsSummary').innerHTML = sum ? `<div class="sum-rows">
+      ${sumRow(t('sum_float_once'), money(sum.openingFloat))}
+      ${sumRow(t('sum_cash_sales'), money(sum.cashSales))}
+      ${sum.expenses ? sumRow(t('sum_expenses'), '-' + money(sum.expenses)) : ''}
+      ${sumRow(t('sum_collected'), money(sum.collected))}
+      ${sumRow(t('sum_net_difference'), diffPill(sum.netDifference), 'total')}
+    </div>` : '';
+
     $('shiftsList').innerHTML = listOrEmpty(shifts, (s) => {
-      const pill = s.difference === null || s.difference === undefined
-        ? `<span class="pill pill-muted">${escapeHTML(t('shift_open'))}</span>`
-        : s.difference === 0
-          ? `<span class="pill pill-success">${escapeHTML(t('shift_exact'))}</span>`
-          : `<span class="pill ${s.difference < 0 ? 'pill-danger' : 'pill-warning'}">${escapeHTML(t(s.difference < 0 ? 'shift_short' : 'shift_over', { amount: money(Math.abs(s.difference)) }))}</span>`;
-      const dash = (n) => (n === null || n === undefined ? '—' : money(n));
+      // What it was at closing stays visible beside the reviewed figure.
+      const first = adjustments.find((x) => x.shiftId === s.id);
+      const pills = first && first.oldDifference !== s.difference ? `${diffPill(first.oldDifference)} ← ${diffPill(s.difference)}` : diffPill(s.difference);
+      const status = !s.closedAt ? ''
+        : s.reviewStatus === 'pending' ? `<span class="pill pill-warning">${escapeHTML(t('shift_pending'))}</span>`
+          : s.reviewStatus === 'reviewed' ? `<span class="pill pill-success">${escapeHTML(t('shift_reviewed', { name: s.reviewedBy || '—' }))}</span>` : '';
+      const shiftNotes = notes.filter((n) => n.shiftId === s.id);
+      const calc = s.cashTotal === undefined
+        ? escapeHTML(t('shift_line', { sales: dash(s.salesTotal), expected: dash(s.expectedCash), counted: dash(s.countedCash) }))
+        : `${escapeHTML(t('shift_calc', { float: dash(s.openingFloat), auto: s.autoOpened ? t('auto_float') : '', cash: dash(s.cashTotal), expenses: dash(s.expensesTotal), expected: dash(s.expectedCash) }))}<br>${escapeHTML(t('shift_calc_counted', { counted: dash(s.countedCash), cards: dash(s.cardsTotal) }))}`;
       return `
-      <li><div class="main"><div class="title"><span class="ltr">${escapeHTML(clockTime(s.openedAt))} – ${s.closedAt ? escapeHTML(clockTime(s.closedAt)) : '…'}</span> · ${escapeHTML(s.closedBy || s.openedBy || '—')}</div>
-      <div class="sub">${escapeHTML(t('shift_line', { sales: dash(s.salesTotal), expected: dash(s.expectedCash), counted: dash(s.countedCash) }))}</div></div>
-      <div class="end">${pill}</div></li>`;
+      <li><div class="main"><div class="title">${shiftTimes(s)} · ${escapeHTML(s.closedBy || s.openedBy || '—')} ${status}</div>
+      <div class="calc">${calc}</div>
+      ${shiftNotes.length ? `<ul class="shift-notes">${shiftNotes.map((n) => `<li>📝 ${escapeHTML(n.text)} <span class="meta">— ${escapeHTML(n.author || '')}, <span class="ltr">${escapeHTML(clockTime(n.createdAt))}</span></span></li>`).join('')}</ul>` : ''}
+      </div>
+      <div class="end">${pills}</div></li>`;
     });
+
+    $('reviewsCard').hidden = !adjustments.length;
+    $('reviewsCount').textContent = adjustments.length ? String(adjustments.length) : '';
+    $('reviewsList').innerHTML = listOrEmpty(adjustments, (x) => {
+      const changes = [];
+      if (x.oldFloat !== x.newFloat) changes.push(t('adj_float', { old: money(x.oldFloat), new: money(x.newFloat) }));
+      if (x.oldCounted !== x.newCounted) changes.push(t('adj_counted', { old: money(x.oldCounted), new: money(x.newCounted) }));
+      const shift = shifts.find((s) => s.id === x.shiftId);
+      return `
+      <li><div class="main"><div class="title">${escapeHTML(t(x.action === 'corrected' ? 'adj_corrected' : 'adj_confirmed'))}${shift ? ' · ' + shiftTimes(shift) : ''}${x.afterDayFinished ? ` <span class="pill pill-danger">${escapeHTML(t('adj_after_finish'))}</span>` : ''}</div>
+      <div class="sub">${changes.length ? escapeHTML(changes.join(' · ')) + ' · ' : ''}${escapeHTML(t('reason', { text: x.reason }))}</div>
+      <div class="sub">${escapeHTML(t('adj_by', { cashier: x.cashier || '—', by: x.reviewedBy || '—' }))} · <span class="ltr">${escapeHTML(clockTime(x.createdAt))}</span></div></div>
+      <div class="end">${diffPill(x.oldDifference)} ← ${diffPill(x.newDifference)}</div></li>`;
+    });
+
+    // Notes not tied to a shift (a shop that doesn't count per shift).
+    const dayNotes = notes.filter((n) => !n.shiftId || !shifts.some((s) => s.id === n.shiftId));
+    $('notesCard').hidden = !dayNotes.length;
+    $('notesCount').textContent = dayNotes.length ? String(dayNotes.length) : '';
+    $('notesList').innerHTML = listOrEmpty(dayNotes, (n) => `
+      <li><div class="main"><div class="title">📝 ${escapeHTML(n.text)}</div>
+      <div class="sub">${escapeHTML(n.author || '—')} · <span class="ltr">${escapeHTML(clockTime(n.createdAt))}</span></div></div></li>`);
 
     const payments = d.paymentBreakdown || [];
     const maxPay = Math.max(1, ...payments.map((p) => p.total));
