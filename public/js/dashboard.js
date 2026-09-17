@@ -381,12 +381,57 @@
     }
   }
 
+  /** The owner sets their own password here; nobody else ever sees it. */
+  function openPasswordModal() {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `<div class="modal" role="dialog" aria-modal="true">
+      <h2>${escapeHTML(t('change_password'))}</h2>
+      <p class="sub">${escapeHTML(t('change_password_sub'))}</p>
+      <div class="field"><label for="pwCurrent">${escapeHTML(t('current_password'))}</label><input id="pwCurrent" type="password" autocomplete="current-password" /></div>
+      <div class="field"><label for="pwNew">${escapeHTML(t('new_password'))}</label><input id="pwNew" type="password" autocomplete="new-password" /></div>
+      <div class="field"><label for="pwAgain">${escapeHTML(t('new_password_again'))}</label><input id="pwAgain" type="password" autocomplete="new-password" /></div>
+      <p class="form-error" id="pwError" role="alert"></p>
+      <div class="actions">
+        <button class="btn btn-outline" type="button" data-close>${escapeHTML(t('cancel'))}</button>
+        <button class="btn btn-primary" type="button" id="pwSave">${escapeHTML(t('save_password'))}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(backdrop);
+    const close = () => backdrop.remove();
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop || e.target.closest('[data-close]')) close(); });
+    const err = backdrop.querySelector('#pwError');
+    backdrop.querySelector('#pwCurrent').focus();
+    backdrop.querySelector('#pwSave').addEventListener('click', async (e) => {
+      const currentPassword = backdrop.querySelector('#pwCurrent').value;
+      const newPassword = backdrop.querySelector('#pwNew').value;
+      const again = backdrop.querySelector('#pwAgain').value;
+      err.textContent = '';
+      if (!currentPassword || !newPassword) { err.textContent = t('fill_both'); return; }
+      if (newPassword.length < 8) { err.textContent = t('password_too_short'); return; }
+      if (newPassword !== again) { err.textContent = t('passwords_differ'); return; }
+      e.target.disabled = true;
+      try {
+        const result = await api('POST', '/api/password', { currentPassword, newPassword }, token);
+        token = result.token;
+        try { localStorage.setItem(TOKEN_KEY, token); } catch (ignore) { /* this visit only */ }
+        close();
+        showNotice('success', t('password_changed'));
+        setTimeout(() => showNotice('', ''), 6000);
+      } catch (error) {
+        err.textContent = error.message;
+        e.target.disabled = false;
+      }
+    });
+  }
+
   /* ---------- Wiring ---------- */
 
   document.querySelectorAll('.langBtn').forEach((btn) => btn.addEventListener('click', () => {
     window.SPC.setLang(window.SPC.lang() === 'ar' ? 'en' : 'ar');
     if (shop) { renderDayOptions(); render(); }
   }));
+  $('passwordBtn').addEventListener('click', openPasswordModal);
   $('logoutBtn').addEventListener('click', signOut);
   $('refreshBtn').addEventListener('click', refreshAll);
   $('daySelect').addEventListener('change', (e) => { selectedDate = e.target.value; userPicked = true; loadDay(); });

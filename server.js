@@ -316,6 +316,42 @@ app.post('/api/login', async (req, res) => {
   res.json({ token, shop: { name: shop.name, code: shop.code } });
 });
 
+/**
+ * The shop owner's own password — set by them, never seen by anyone else
+ * (only the bcrypt hash is stored, and the owner page can reset it but not
+ * read it). Every other session of this shop is signed out.
+ */
+app.post('/api/password', requireRole('manager'), async (req, res) => {
+  const current = String((req.body && req.body.currentPassword) || '');
+  const next = String((req.body && req.body.newPassword) || '');
+  const limitKey = `p|${req.ip}`;
+  if (tooManyAttempts(limitKey)) return res.status(429).json({ error: 'Too many attempts. Try again in 15 minutes.' });
+  if (next.length < 8) return res.status(400).json({ error: 'The new password must be at least 8 characters.' });
+  if (next === current) return res.status(400).json({ error: 'The new password is the same as the old one.' });
+
+  const shop = shopsById.get(req.shop.id);
+  if (!shop) return res.status(404).json({ error: 'Shop not found.' });
+  if (!(await bcrypt.compare(current, shop.manager_password_hash))) {
+    recordFailure(limitKey);
+    return res.status(400).json({ error: 'The current password is not correct.' });
+  }
+
+  try {
+    const updated = await db.updateShop(shop.id, {
+      managerPasswordHash: await bcrypt.hash(next, 10),
+      passwordVersion: shop.password_version + 1
+    });
+    updated.last_push_at = shop.last_push_at;
+    cacheShop(updated);
+    // A fresh token, so the person who changed it stays signed in here.
+    const token = jwt.sign({ role: 'manager', sid: updated.id, pv: updated.password_version }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ token });
+  } catch (err) {
+    console.error('[shop] password change failed:', err.message);
+    res.status(503).json({ error: 'Could not reach the database. Try again shortly.' });
+  }
+});
+
 app.get('/api/shop', requireRole('manager'), async (req, res) => {
   try {
     const stored = await db.listDates(req.shop.id, KEEP_DAYS);
