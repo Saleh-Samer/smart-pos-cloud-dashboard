@@ -314,7 +314,7 @@
       if (x.oldCounted !== x.newCounted) changes.push(t('adj_counted', { old: money(x.oldCounted), new: money(x.newCounted) }));
       const shift = shifts.find((s) => s.id === x.shiftId);
       return `
-      <li><div class="main"><div class="title">${escapeHTML(t(x.action === 'corrected' ? 'adj_corrected' : 'adj_confirmed'))}${shift ? ' · ' + shiftTimes(shift) : ''}${x.afterDayFinished ? ` <span class="pill pill-danger">${escapeHTML(t('adj_after_finish'))}</span>` : ''}</div>
+      <li><div class="main"><div class="title">${escapeHTML(t(x.action === 'corrected' ? 'adj_corrected' : x.action === 'expense_rejected' ? 'adj_expense_rejected' : 'adj_confirmed'))}${shift ? ' · ' + shiftTimes(shift) : ''}${x.afterDayFinished ? ` <span class="pill pill-danger">${escapeHTML(t('adj_after_finish'))}</span>` : ''}</div>
       <div class="sub">${changes.length ? escapeHTML(changes.join(' · ')) + ' · ' : ''}${escapeHTML(t('reason', { text: x.reason }))}</div>
       <div class="sub">${escapeHTML(t('adj_by', { cashier: x.cashier || '—', by: x.reviewedBy || '—' }))} · <span class="ltr">${escapeHTML(clockTime(x.createdAt))}</span></div></div>
       <div class="end pills">${diffPill(x.oldDifference)} ← ${diffPill(x.newDifference)}</div></li>`;
@@ -346,10 +346,22 @@
       <div class="end">${money(p.total)}</div></li>`);
 
     $('expensesTotal').textContent = d.externalExpenses && d.externalExpenses.length ? `${money(d.externalExpensesTotal)} ${t('currency')}` : '';
+    const expensePill = (e) => (e.status === 'pending' ? `<span class="pill pill-warning">${escapeHTML(t('expense_pending'))}</span>`
+      : e.status === 'rejected' ? `<span class="pill pill-danger">${escapeHTML(t('expense_rejected'))}</span>` : '');
     $('expensesList').innerHTML = listOrEmpty(d.externalExpenses, (e) => `
-      <li><div class="main"><div class="title">${escapeHTML(e.items)}</div>
-      <div class="sub">${escapeHTML(t('recorded_by', { name: e.recordedBy || '—' }))}${e.approvedBy ? ' · ' + escapeHTML(t('approved_by', { name: e.approvedBy })) : ''} · <span class="ltr">${escapeHTML(clockTime(e.createdAt))}</span></div></div>
-      <div class="end">${money(e.amount)}</div></li>`);
+      <li><div class="main"><div class="title">${escapeHTML(e.items)} ${expensePill(e)}</div>
+      <div class="sub">${escapeHTML(t('recorded_by', { name: e.recordedBy || '—' }))}${e.approvedBy ? ' · ' + escapeHTML(t('approved_by', { name: e.approvedBy })) : ''} · <span class="ltr">${escapeHTML(clockTime(e.createdAt))}</span></div>
+      ${e.status === 'rejected' && e.reviewReason ? `<div class="sub">${escapeHTML(t('reason', { text: e.reviewReason }))}</div>` : ''}</div>
+      <div class="end">${e.status === 'rejected' ? `<s>${money(e.amount)}</s>` : money(e.amount)}</div></li>`);
+
+    // Drawer opened without a sale — how often, who and why.
+    const openings = Array.isArray(d.drawerOpenings) ? d.drawerOpenings : [];
+    $('drawerCard').hidden = !openings.length;
+    $('drawerCount').textContent = openings.length ? String(openings.length) : '';
+    const drawerReason = (o) => (o.reason === 'other' ? (o.note || '') : t(o.reason === 'change' ? 'drawer_change' : 'drawer_exchange'));
+    $('drawerList').innerHTML = listOrEmpty(openings, (o) => `
+      <li><div class="main"><div class="title">${escapeHTML(drawerReason(o))}</div>
+      <div class="sub">${escapeHTML(o.user || '—')} · <span class="ltr">${escapeHTML(clockTime(o.createdAt))}</span></div></div></li>`);
 
     const deleted = d.deletedInvoices || [];
     $('deletedCount').textContent = deleted.length ? String(deleted.length) : '';
