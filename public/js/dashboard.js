@@ -383,6 +383,42 @@
       <li><div class="main"><div class="title">${escapeHTML(x.action === 'renamed' ? t('table_renamed', { old: x.oldName, new: x.newName }) : t('table_deleted', { old: x.oldName }))}</div>
       <div class="sub">${escapeHTML(t('requested_by', { name: x.requestedBy || '—' }))}${x.approvedBy ? ' · ' + escapeHTML(t('approved_by', { name: x.approvedBy })) : ''}${x.reason ? ' · ' + escapeHTML(t('reason', { text: x.reason })) : ''} · <span class="ltr">${escapeHTML(clockTime(x.changedAt))}</span></div></div></li>`);
 
+    // What arrived, what sold, what was thrown away — the paper list on the fridge, on the phone.
+    const week = d.stockWeek;
+    $('stockWeekCard').hidden = !(week && week.products && week.products.length);
+    if (week && week.products) {
+      const tot = week.totals;
+      $('stockWeekTotals').innerHTML = `<div class="sum-rows">
+        <div class="sum-row"><span>${escapeHTML(t('stock_received'))}</span><span class="ltr">${tot.received}</span></div>
+        <div class="sum-row"><span>${escapeHTML(t('stock_sold'))}</span><span class="ltr">${tot.sold}</span></div>
+        <div class="sum-row"><span>${escapeHTML(t('stock_wasted'))}</span><span class="ltr">${tot.wasted}${tot.received ? ' (' + Math.round((tot.wasted / tot.received) * 100) + '%)' : ''}</span></div>
+        <div class="sum-row total"><span>${escapeHTML(t('stock_loss'))}</span><span class="ltr">${money(tot.wasteValue)} ${escapeHTML(t('currency'))}</span></div>
+      </div>`;
+      $('stockWeekList').innerHTML = week.products.slice(0, 12).map((p) => `
+        <li><div class="main"><div class="title">${escapeHTML((p.emoji || '') + ' ' + p.name)}</div>
+        <div class="sub">${escapeHTML(t('stock_line', { received: p.received, sold: p.sold, wasted: p.wasted }))}${p.wastePct ? ' · ' + p.wastePct + '%' : ''}</div></div>
+        <div class="end">${p.wasteValue ? `<span class="pill pill-danger">-${money(p.wasteValue)}</span>` : `<span class="pill pill-success">✓</span>`}</div></li>`).join('');
+      $('stockWeekIdle').textContent = (week.idle || []).length ? t('stock_idle', { names: week.idle.map((p) => `${p.name} (${p.stock})`).join('، ') }) : '';
+    }
+
+    const wasteList = Array.isArray(d.waste) ? d.waste : [];
+    $('wasteCard').hidden = !wasteList.length;
+    $('wasteCount').textContent = wasteList.length ? String(wasteList.length) : '';
+    const wasteReason = (w) => (w.reason === 'other' ? (w.note || '') : t(w.reason === 'expired' ? 'waste_expired' : 'waste_damaged'));
+    $('wasteList').innerHTML = listOrEmpty(wasteList, (w) => `
+      <li><div class="main"><div class="title">${escapeHTML(w.product)} × ${w.qty} ${w.status === 'pending' ? `<span class="pill pill-warning">${escapeHTML(t('expense_pending'))}</span>` : w.status === 'rejected' ? `<span class="pill pill-danger">${escapeHTML(t('expense_rejected'))}</span>` : ''}</div>
+      <div class="sub">${escapeHTML(wasteReason(w))} · ${escapeHTML(w.recordedBy || '—')} · <span class="ltr">${escapeHTML(clockTime(w.createdAt))}</span></div>
+      ${w.status === 'rejected' && w.reviewReason ? `<div class="sub">${escapeHTML(t('reason', { text: w.reviewReason }))}</div>` : ''}</div>
+      <div class="end">${w.status === 'rejected' ? `<s>${money(w.value)}</s>` : money(w.value)}</div></li>`);
+
+    const receivedList = Array.isArray(d.received) ? d.received : [];
+    $('receivedCard').hidden = !receivedList.length;
+    $('receivedCount').textContent = receivedList.length ? String(receivedList.length) : '';
+    $('receivedList').innerHTML = listOrEmpty(receivedList, (r) => `
+      <li><div class="main"><div class="title">${escapeHTML(r.product)}</div>
+      <div class="sub">${escapeHTML(r.by || '—')} · <span class="ltr">${escapeHTML(clockTime(r.createdAt))}</span></div></div>
+      <div class="end">+${r.qty}</div></li>`);
+
     const low = d.lowStock;
     $('lowStockCard').hidden = !Array.isArray(low);
     if (Array.isArray(low)) {
