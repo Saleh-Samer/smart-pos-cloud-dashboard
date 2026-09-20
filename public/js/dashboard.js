@@ -354,6 +354,17 @@
       ${e.status === 'rejected' && e.reviewReason ? `<div class="sub">${escapeHTML(t('reason', { text: e.reviewReason }))}</div>` : ''}</div>
       <div class="end">${e.status === 'rejected' ? `<s>${money(e.amount)}</s>` : money(e.amount)}</div></li>`);
 
+    // Payment method corrected on an invoice (Visa rung up, cash taken…) — kept, never hidden.
+    const fixes = Array.isArray(d.paymentCorrections) ? d.paymentCorrections : [];
+    $('correctionsCard').hidden = !fixes.length;
+    $('correctionsCount').textContent = fixes.length ? String(fixes.length) : '';
+    const methodName = (m) => t('method_' + String(m).toLowerCase());
+    $('correctionsList').innerHTML = listOrEmpty(fixes, (c) => `
+      <li><div class="main"><div class="title"><span class="ltr">${escapeHTML(c.invoice)}</span> ${escapeHTML(methodName(c.oldMethod))} → ${escapeHTML(methodName(c.newMethod))}${c.afterDayFinished ? ` <span class="pill pill-danger">${escapeHTML(t('adj_after_finish'))}</span>` : ''}</div>
+      <div class="sub">${escapeHTML(t('reason', { text: c.reason || '—' }))} · ${escapeHTML(c.correctedBy || '—')} · <span class="ltr">${escapeHTML(clockTime(c.createdAt))}</span></div>
+      ${c.oldDifference !== null && c.newDifference !== null ? `<div class="sub">${escapeHTML(t('pay_fix_shift', { from: money(c.oldDifference), to: money(c.newDifference) }))}</div>` : ''}</div>
+      <div class="end">${money(c.amount)}</div></li>`);
+
     // Drawer opened without a sale — how often, who and why.
     const openings = Array.isArray(d.drawerOpenings) ? d.drawerOpenings : [];
     $('drawerCard').hidden = !openings.length;
