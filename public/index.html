@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" type="image/png" href="icon-512.png" />
 <link rel="apple-touch-icon" href="icon-512.png" />
-<link rel="stylesheet" href="css/style.css?v=8" />
+<link rel="stylesheet" href="css/style.css?v=9" />
 </head>
 <body data-title="app_title">
 
@@ -61,6 +61,12 @@
     </section>
 
     <div id="dataArea" hidden>
+      <div id="printHeader" class="print-only">
+        <div class="ph-brand">SMART POS</div>
+        <h1 id="phShop"></h1>
+        <div id="phLine"></div>
+        <div id="phStatus"></div>
+      </div>
       <div id="dayStatus" class="notice" hidden></div>
       <section class="stats">
         <div class="stat"><div class="stat-label" data-t="revenue"></div><span class="stat-value" id="statRevenue"></span></div>
@@ -86,11 +92,12 @@
         <section class="card"><h2><span data-t="table_changes"></span><span class="count" id="tableCount"></span></h2><ul class="list" id="tableList"></ul></section>
         <section class="card" id="lowStockCard"><h2><span data-t="low_stock"></span><span class="count" id="lowStockCount"></span></h2><ul class="list" id="lowStockList"></ul></section>
       </div>
+      <div class="pdf-wrap"><button class="btn btn-primary" type="button" id="pdfBtn" data-t="save_pdf"></button></div>
     </div>
   </main>
 </div>
 
-<script src="js/common.js?v=11"></script>
-<script src="js/dashboard.js?v=11"></script>
+<script src="js/common.js?v=12"></script>
+<script src="js/dashboard.js?v=12"></script>
 </body>
 </html>

@@ -194,3 +194,24 @@ html[dir="rtl"] .stat-value { text-align: right; }
   .topbar { gap: 10px; }
 }
 .card h2 .count:empty { display: none; }
+
+/* ---------- Save as PDF ---------- */
+.pdf-wrap { display: flex; justify-content: center; padding: 22px 0 8px; }
+.print-only { display: none; }
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+  html, body { background: #fff !important; }
+  body { font-size: 11pt; }
+  .topbar, .daybar, #notice, #dayStatus, .pdf-wrap, #loginScreen, .toast, .toasts, #passwordModal, dialog { display: none !important; }
+  .page { padding: 0 !important; max-width: none !important; }
+  .print-only { display: block; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #111827; }
+  .ph-brand { font-size: 9pt; letter-spacing: 2px; color: #6b7280; }
+  #printHeader h1 { margin: 2px 0 2px; font-size: 20pt; }
+  #phLine, #phStatus { font-size: 10.5pt; color: #374151; }
+  .grid-2 { display: block !important; }
+  .card { box-shadow: none !important; border: 1px solid #d1d5db; margin: 0 0 10px; break-inside: avoid; page-break-inside: avoid; }
+  .stats { break-inside: avoid; }
+  .stat, .stat.highlight, .pill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .list li { break-inside: avoid; }
+}

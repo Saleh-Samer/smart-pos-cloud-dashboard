@@ -486,6 +486,41 @@
 
   /* ---------- Wiring ---------- */
 
+  /* ---------- Save the day as a PDF ----------
+     The browser's own "print → save as PDF", with a print stylesheet: it draws
+     Arabic properly and needs nothing on the server. The report is always in
+     English (the page switches to English for the print and back afterwards). */
+  $('pdfBtn').addEventListener('click', () => {
+    if (!lastSnapshot || !shop) return;
+    const previous = window.SPC.lang();
+    const oldTitle = document.title;
+    let restored = false;
+    const restore = () => {
+      if (restored) return;
+      restored = true;
+      window.removeEventListener('afterprint', restore);
+      document.title = oldTitle;
+      if (window.SPC.lang() !== previous) {
+        window.SPC.setLang(previous);
+        renderDayOptions();
+        render();
+      }
+    };
+    if (previous !== 'en') {
+      window.SPC.setLang('en');
+      renderDayOptions();
+    }
+    render();
+    const info = dayInfo[selectedDate] || {};
+    $('phShop').textContent = shop.name;
+    $('phLine').textContent = `Daily report · ${selectedDate}`;
+    $('phStatus').textContent = info.running ? 'Day still running — figures so far' : (info.finished ? 'Day finished — final figures' : '');
+    document.title = `Smart POS - ${shop.name} - ${selectedDate}`;
+    window.addEventListener('afterprint', restore);
+    setTimeout(() => window.print(), 200);
+    setTimeout(restore, 120000); // a phone browser may never say "afterprint"
+  });
+
   document.querySelectorAll('.langBtn').forEach((btn) => btn.addEventListener('click', () => {
     window.SPC.setLang(window.SPC.lang() === 'ar' ? 'en' : 'ar');
     if (shop) { renderDayOptions(); render(); }
